@@ -17,6 +17,7 @@ import { Save as SaveProduct } from "./pages/admin/product/save";
 import { Report as ReportUser } from "./pages/admin/user/report";
 import { Save as SaveUser } from "./pages/admin/user/save";
 import { Dashboard as DashboardAdmin } from "./pages/admin/dashboard";
+import { Dashboard as DashboardCashier } from "./pages/cashier/dashboard";
 
 function App() {
   const { auth } = useAuth();
@@ -40,6 +41,9 @@ function App() {
             <Route path="/admin/users/save" element={<SaveUser />} />
           </Route>
           {/* admin panel end */}
+          <Route element={<ProtectedPath allowedDepartments={"cashier"} />}>
+            <Route path="/cashier" element={<DashboardCashier />} />
+          </Route>
         </Route>
       </Routes>
     </Router>

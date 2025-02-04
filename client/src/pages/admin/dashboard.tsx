@@ -56,6 +56,10 @@ export const Dashboard = () => {
   );
   const { data: users } = useSWR("http://localhost:7700/api/users", fetcher);
 
+  const { data: user } = useSWR("http://localhost:7700/api/auth/token", fetcher);
+
+  console.log(user);
+
   const handleProductCardClick = () => {
     navigate("/admin/product");
   };

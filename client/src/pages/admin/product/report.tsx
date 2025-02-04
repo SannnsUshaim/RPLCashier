@@ -181,6 +181,33 @@ export const Report = () => {
         return <div className="uppercase">{harga}</div>;
       },
     },
+    {
+      id: "Attachment",
+      accessorKey: "attachmentP",
+      header: ({ column }) => {
+        return (
+          <Button
+            className="px-0"
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Attachment
+            {column.getIsSorted() === "asc" ? (
+              <ArrowUpWideNarrow className="ml-2 h-4 w-4" />
+            ) : (
+              <ArrowDownWideNarrow className="ml-2 h-4 w-4" />
+            )}
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const harga = row.original.harga.toLocaleString("id-ID", {
+          style: "currency",
+          currency: "IDR",
+        });
+        return <div className="uppercase">{harga}</div>;
+      },
+    },
   ];
 
   const selectedRowIds = Object.keys(rowSelection);

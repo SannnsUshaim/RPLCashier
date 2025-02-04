@@ -1,5 +1,5 @@
 import React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -13,20 +13,20 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import dayjs from "dayjs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ProductSchema } from "@/schemas/product";
 import useSWR from "swr";
 import axios from "axios";
 import { fetcher } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { useLocation, useNavigate } from "react-router-dom";
-import { CircleX, FilePlus } from "lucide-react";
+import {
+  BookDashed,
+  CircleX,
+  Eye,
+  FilePlus,
+  PlusCircle,
+  Trash2,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import InputMoney from "@/components/ui/inputMoney";
 
@@ -47,6 +47,8 @@ export const Save = () => {
     fetcher
   );
 
+  const [file, setFile] = React.useState<File | undefined>(undefined);
+
   const form = useForm<z.infer<typeof ProductSchema>>({
     resolver: zodResolver(ProductSchema),
     defaultValues: {
@@ -58,11 +60,66 @@ export const Save = () => {
     },
   });
 
+  const { fields, append, remove } = useFieldArray({
+    name: "attachment",
+    control: form.control,
+    rules: {
+      required: "Minimal 1",
+    },
+  });
+
   React.useEffect(() => {
     if (product_id) {
       form.setValue("_id", product_id);
     }
   }, [form, product_id]);
+
+  // React.useEffect(() => {
+  //   if (file) {
+  //     form.setValue("attachmentP", file);
+  //   }
+  // }, [form, file]);
+
+  const uploadFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await axios.post(
+        "http://localhost:7700/api/upload",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      const { ref } = res.data;
+      return ref;
+    } catch (e) {
+      console.error("Error uploading file", e);
+      throw e; // Re-throw the error to handle it in the `onSubmit` function
+    }
+  };
+
+  // const uploadFile = async () => {
+  //   const formData = new FormData();
+  //   if (file) {
+  //     formData.append("file", file);
+
+  //     try {
+  //       const res = await axios.post(
+  //         "http://localhost:7700/api/upload",
+  //         formData
+  //       );
+  //       const { ref } = res.data;
+  //       return ref;
+  //     } catch (error) {
+  //       console.error("Error uploading file", error);
+  //       throw error; // Re-throw the error to handle it in the `onSubmit` function
+  //     }
+  //   }
+  // };
 
   React.useEffect(() => {
     if (product) {
@@ -72,33 +129,49 @@ export const Save = () => {
         name: product.name,
         stok: product.stok,
         harga: product.harga,
+        attachment: product.attachment.map((attachment) => ({
+          attachmentP: attachment.attachmentP, // This should be a URL (string)
+        })),
       });
     }
   }, [form, product]);
 
   const onSubmit = async (values: z.infer<typeof ProductSchema>) => {
     try {
+      // Upload files and get their references
+      const attachmentRefs = await Promise.all(
+        values.attachment.map(async (attachment) => {
+          if (attachment.attachmentP) {
+            const ref = await uploadFile(attachment.attachmentP);
+            return { attachmentP: ref };
+          }
+          return { attachmentP: null }; // Handle cases where no file is provided
+        })
+      );
+
+      console.log(attachmentRefs);
+
+      // Prepare the payload
+      const payload = {
+        _id: values._id,
+        name: values.name,
+        stok: values.stok,
+        harga: values.harga,
+        attachment: attachmentRefs,
+      };
+
+      // Send the request
       if (product) {
-        await axios.put("http://localhost:7700/api/product", {
-          _id: values._id,
-          name: values.name,
-          stok: values.stok,
-          harga: values.harga,
-        });
-        navigate("/admin/product");
+        await axios.put("http://localhost:7700/api/product", payload);
         toast.success("Product successfully edited!");
       } else {
-        await axios.post("http://localhost:7700/api/product", {
-          _id: values._id,
-          name: values.name,
-          stok: values.stok,
-          harga: values.harga,
-        });
-        navigate("/admin/product");
+        await axios.post("http://localhost:7700/api/product", payload);
         toast.success("Product successfully added!");
       }
+
+      navigate("/admin/product");
     } catch (error) {
-      console.log("Error submitting form:", error);
+      console.error("Error submitting form:", error);
       toast.error("Request error!");
       navigate("/admin/product");
     }
@@ -221,6 +294,104 @@ export const Save = () => {
               />
             </div>
           </div>
+          <div className="flex flex-col col-span-12 gap-3 overflow-x-auto border-[2px] rounded-lg border-gray-300 mt-5">
+            {fields.length === 0 ? (
+              <>
+                <div className="flex flex-col w-full text-gray-400 bg-gray-100 gap-2 border-[2px] items-center justify-center border-gray-200 p-4 rounded-lg capitalize">
+                  <BookDashed size={65} />
+                  no data
+                </div>
+                <FormMessage className="text-red-500">
+                  {form.formState.errors.attachment?.message}
+                </FormMessage>
+              </>
+            ) : (
+              <div className="flex flex-col relative justify-start overflow-x-auto min-w-max h-auto col-span-12">
+                {fields.map((field, index) => (
+                  <div
+                    key={field.id}
+                    className="flex items-center gap-10 first-of-type:border-t-0 border-b-[2px] p-4 w-full"
+                  >
+                    <div className="flex flex-col items-center text-sm font-medium space-y-3">
+                      <Label>Delete</Label>
+                      <Button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          // setSelectedJobOrder((prev) => {
+                          //   if (!prev || prev.length === 0) return prev;
+                          //   return prev.filter((_, i) => i !== index);
+                          // });
+                          remove(index);
+                        }}
+                        className="bg-red-500 hover:bg-red-400"
+                      >
+                        <Trash2 size={20} className="text-white" />
+                      </Button>
+                    </div>
+                    <div className="flex gap-4 h-full">
+                      <FormField
+                        control={form.control}
+                        name={`attachment.${index}.attachmentP`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex gap-2 items-center">
+                              <FormLabel>
+                                {product ? (
+                                  <div className="flex gap-1 space-y-2 w-full items-end">
+                                    Attachment
+                                    <span className="text-red-500">*</span>
+                                    <a
+                                      href={product.attachmentP}
+                                      title="View The Previous Attachment"
+                                      rel="noopener noreferrer"
+                                    >
+                                      <Eye
+                                        size={15}
+                                        className="w-full px-2 hover:cursor-pointer hover:text-primary"
+                                      />
+                                    </a>
+                                  </div>
+                                ) : (
+                                  <>
+                                    Attachment{" "}
+                                    <span className="text-red-500">*</span>
+                                  </>
+                                )}
+                              </FormLabel>
+                              <FormMessage />
+                            </div>
+                            <FormControl>
+                              <Input
+                                type="file"
+                                // value={String(field.value)}
+                                className="hover:cursor-pointer"
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  setFile(e.target.files[0]);
+                                }}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <Button
+            onClick={(e) => {
+              e.preventDefault();
+              append({
+                attachmentP: undefined,
+              });
+            }}
+            className="flex items-center gap-2 font-medium mt-5 text-lighter"
+          >
+            <PlusCircle size={20} fill="white" className="text-primary" />
+            Add
+          </Button>
         </div>
         <div className="flex items-center gap-3 justify-end py-4">
           <a
