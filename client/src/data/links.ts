@@ -3,7 +3,7 @@ import { Boxes, Home, Users } from "lucide-react";
 export const NavLinks = [
     {
         label: "Dahsboard",
-        base: "/admin/dashboard",
+        base: "/admin",
         department: "admin",
         icon: Home
     },

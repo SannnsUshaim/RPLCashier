@@ -5,12 +5,12 @@ export const ScanSchemas = z.object({
   totalHarga: z.number(),
   bayar: z.number(),
   kembalian: z.number(),
-  product: z.array(
+  products: z.array(
     z.object({
-      productId: z.string(),
+      _id: z.string(),
       nama: z.string(),
       harga: z.number(),
-      jumlah: z.number(),
+      quantity: z.number(),
     })
   ),
 });

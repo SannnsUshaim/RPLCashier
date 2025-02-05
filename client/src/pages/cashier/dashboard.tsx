@@ -8,37 +8,31 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { ScanSchemas } from "@/schemas/scanned";
 import { Minus, Plus, Printer, ShoppingCart, Trash2 } from "lucide-react";
 import { Label } from "@radix-ui/react-label";
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import InputMoney from "@/components/ui/inputMoney";
-
-// Schema untuk validasi
-const ScanSchemas = z.object({
-  products: z.array(
-    z.object({
-      _id: z.string(),
-      nama: z.string(),
-      harga: z.number(),
-      stok: z.number(),
-      quantity: z.number().min(1),
-    })
-  ),
-  totalBarang: z.number(),
-  totalHarga: z.number(),
-  bayar: z.number().min(0),
-  kembalian: z.number(),
-});
+import { useNavigate } from "react-router-dom";
+import useSWR from "swr";
+import { fetcher } from "@/lib/utils";
 
 // Mock data produk - ganti dengan API call
 const mockProducts = [
-  { _id: "8992843121009", nama: "Product 1", harga: 10000, stok: 5 },
-  { _id: "718037869469", nama: "Product 2", harga: 15000, stok: 3 },
+  { _id: "8809618376543", nama: "Product 1", harga: 10000, stok: 5 },
+  { _id: "8809622345665", nama: "Product 2", harga: 15000, stok: 3 },
+  { _id: "800142384835", nama: "Product 3", harga: 12000, stok: 3 },
+  { _id: "8996001600146", nama: "Product 4", harga: 20000, stok: 3 },
+  { _id: "8993988300403", nama: "Product 5", harga: 25000, stok: 3 },
 ];
 
 export const Dashboard = () => {
+  const navigate = useNavigate();
+
+  const { data: barang } = useSWR("http://localhost:7700/api/product", fetcher);
+
   const form = useForm<z.infer<typeof ScanSchemas>>({
     resolver: zodResolver(ScanSchemas),
     defaultValues: {
@@ -148,7 +142,6 @@ export const Dashboard = () => {
     if (bayar > 0) {
       const bayar = form.watch("bayar");
       const kembali = bayar - totalHarga;
-      console.log(kembali);
       form.setValue("kembalian", kembali);
     }
   }, [form, totalHarga, bayar]);
@@ -175,15 +168,35 @@ export const Dashboard = () => {
 
   const onSubmit = async (values: z.infer<typeof ScanSchemas>) => {
     const product = values.products.map((p) => p);
-    if (!products) {
-      throw new Error("Minimal 1 Product");
+    if (values.bayar < values.totalHarga) {
+      form.setError("bayar", { message: "Jumlah bayar kurang" });
+      return;
+    }
+
+    if (products.length < 1 || products.length == 0) {
+      form.setError("products", { message: "Minimal 1 Product" });
     } else {
+      // Navigasi ke halaman print dengan membawa data
+      navigate("/cashier/print", {
+        state: {
+          products: values.products,
+          totalBarang: values.totalBarang,
+          totalHarga: values.totalHarga,
+          bayar: values.bayar,
+          kembalian: values.kembalian,
+          waktuTransaksi: new Date().toLocaleString(),
+        },
+      });
+
+      // Reset form setelah print (opsional)
+      handleReset();
     }
   };
 
   return (
     <Form {...form}>
       <form
+        id="products"
         onSubmit={form.handleSubmit(onSubmit)}
         className="bg-white w-full h-full rounded-lg shadow-lg p-5 overflow-y-auto flex flex-col justify-between"
       >
@@ -192,6 +205,8 @@ export const Dashboard = () => {
             <div className="bg-white border-2 border-slate-400 h-full w-full rounded-lg flex flex-col gap-2 justify-center items-center text-slate-300 text-xl font-medium capitalize">
               <ShoppingCart size={50} />
               <p>no product scanned ...</p>
+
+              <FormMessage />
             </div>
           ) : (
             <div className="flex flex-col relative justify-start overflow-x-hidden min-w-max h-auto col-span-12 border-2">
@@ -233,16 +248,16 @@ export const Dashboard = () => {
                         </div>
                       </div>
                       <div className="flex gap-3 items-center justify-center">
-                        <div className="bg-primary px-2 py-1 rounded-lg text-lighter">
-                          <Plus
-                            size={20}
-                            onClick={() => handleQuantityChange(index, +1)}
-                          />
-                        </div>
-                        <div className="bg-red-500 px-2 py-1 rounded-lg text-lighter">
+                        <div className="bg-red-500 px-2 py-1 rounded-lg text-lighter hover:cursor-pointer">
                           <Minus
                             size={20}
                             onClick={() => handleQuantityChange(index, -1)}
+                          />
+                        </div>
+                        <div className="bg-primary px-2 py-1 rounded-lg text-lighter hover:cursor-pointer">
+                          <Plus
+                            size={20}
+                            onClick={() => handleQuantityChange(index, +1)}
                           />
                         </div>
                       </div>
@@ -271,7 +286,12 @@ export const Dashboard = () => {
             name="bayar"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Jumlah Bayar</FormLabel>
+                <div className="flex items-start gap-2">
+                  <FormLabel className="flex gap-1">
+                    Jumlah Bayar <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormMessage className="text-xs" />
+                </div>
                 <FormControl>
                   <InputMoney field={field} defaultValue={field.value} />
                 </FormControl>

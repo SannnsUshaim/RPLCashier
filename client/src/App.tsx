@@ -18,12 +18,10 @@ import { Report as ReportUser } from "./pages/admin/user/report";
 import { Save as SaveUser } from "./pages/admin/user/save";
 import { Dashboard as DashboardAdmin } from "./pages/admin/dashboard";
 import { Dashboard as DashboardCashier } from "./pages/cashier/dashboard";
+import { Print as PrintProductReceipt } from "./pages/cashier/print";
 
 function App() {
   const { auth } = useAuth();
-  React.useEffect(() => {
-    console.log(auth);
-  }, [auth]);
   return (
     <Router>
       <Toaster position="top-right" reverseOrder={false} />
@@ -31,19 +29,22 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/404-not-found" element={<NotFound />} />
         <Route path="/403-forbidden" element={<Forbidden />} />
-        <Route path="/" element={<Layout />}>
+        <Route path="/cashier/print" element={<PrintProductReceipt />} />
+        <Route path={"/"} element={<Layout />}>
           {/* admin panel start */}
           <Route element={<ProtectedPath allowedDepartments={"admin"} />}>
-            <Route path="/admin/dashboard" element={<DashboardAdmin />} />
+            <Route path="/admin" element={<DashboardAdmin />} />
             <Route path="/admin/product" element={<ReportProduct />} />
             <Route path="/admin/product/save" element={<SaveProduct />} />
             <Route path="/admin/users/" element={<ReportUser />} />
             <Route path="/admin/users/save" element={<SaveUser />} />
           </Route>
           {/* admin panel end */}
+          {/* cashier panel start */}
           <Route element={<ProtectedPath allowedDepartments={"cashier"} />}>
             <Route path="/cashier" element={<DashboardCashier />} />
           </Route>
+          {/* cashier panel end */}
         </Route>
       </Routes>
     </Router>
