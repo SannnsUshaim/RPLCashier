@@ -129,9 +129,9 @@ export const Save = () => {
         name: product.name,
         stok: product.stok,
         harga: product.harga,
-        attachment: product.attachment.map((attachment) => ({
-          attachmentP: attachment.attachmentP, // This should be a URL (string)
-        })),
+        // attachment: product.attachment.map((attachment) => ({
+        //   attachmentP: attachment.attachmentP, // This should be a URL (string)
+        // })),
       });
     }
   }, [form, product]);
@@ -139,17 +139,17 @@ export const Save = () => {
   const onSubmit = async (values: z.infer<typeof ProductSchema>) => {
     try {
       // Upload files and get their references
-      const attachmentRefs = await Promise.all(
-        values.attachment.map(async (attachment) => {
-          if (attachment.attachmentP) {
-            const ref = await uploadFile(attachment.attachmentP);
-            return { attachmentP: ref };
-          }
-          return { attachmentP: null }; // Handle cases where no file is provided
-        })
-      );
+      // const attachmentRefs = await Promise.all(
+      //   values.attachment.map(async (attachment) => {
+      //     if (attachment.attachmentP) {
+      //       const ref = await uploadFile(attachment.attachmentP);
+      //       return { attachmentP: ref };
+      //     }
+      //     return { attachmentP: null }; // Handle cases where no file is provided
+      //   })
+      // );
 
-      console.log(attachmentRefs);
+      // console.log(attachmentRefs);
 
       // Prepare the payload
       const payload = {
@@ -157,7 +157,7 @@ export const Save = () => {
         name: values.name,
         stok: values.stok,
         harga: values.harga,
-        attachment: attachmentRefs,
+        // attachment: attachmentRefs,
       };
 
       // Send the request
@@ -294,7 +294,7 @@ export const Save = () => {
               />
             </div>
           </div>
-          <div className="flex flex-col col-span-12 gap-3 overflow-x-auto border-[2px] rounded-lg border-gray-300 mt-5">
+          {/* <div className="flex flex-col col-span-12 gap-3 overflow-x-auto border-[2px] rounded-lg border-gray-300 mt-5">
             {fields.length === 0 ? (
               <>
                 <div className="flex flex-col w-full text-gray-400 bg-gray-100 gap-2 border-[2px] items-center justify-center border-gray-200 p-4 rounded-lg capitalize">
@@ -379,8 +379,8 @@ export const Save = () => {
                 ))}
               </div>
             )}
-          </div>
-          <Button
+          </div> */}
+          {/* <Button
             onClick={(e) => {
               e.preventDefault();
               append({
@@ -391,7 +391,7 @@ export const Save = () => {
           >
             <PlusCircle size={20} fill="white" className="text-primary" />
             Add
-          </Button>
+          </Button> */}
         </div>
         <div className="flex items-center gap-3 justify-end py-4">
           <a

@@ -25,7 +25,7 @@ import useSWR from "swr";
 import axios from "axios";
 import { fetcher } from "@/lib/utils";
 import { useLocation, useNavigate } from "react-router-dom";
-import { CircleX, FilePlus } from "lucide-react";
+import { BookDashed, CircleX, FilePlus } from "lucide-react";
 import toast from "react-hot-toast";
 import InputMoney from "@/components/ui/inputMoney";
 
@@ -35,7 +35,6 @@ export const Save = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const userId = location.state?.userId;
-  console.log(userId);
 
   const { data: user_id } = useSWR(
     "http://localhost:7700/api/users/id",
@@ -46,7 +45,11 @@ export const Save = () => {
     userId ? "http://localhost:7700/api/users/" + userId : null,
     fetcher
   );
-  console.log(user);
+
+  const { data: department } = useSWR(
+    "http://localhost:7700/api/users/departments/",
+    fetcher
+  );
 
   const form = useForm<z.infer<typeof UserSchema>>({
     resolver: zodResolver(UserSchema),
@@ -56,6 +59,7 @@ export const Save = () => {
       username: "",
       email: "",
       password: "",
+      department: undefined,
     },
   });
 
@@ -73,6 +77,7 @@ export const Save = () => {
         username: user.username,
         email: user.email,
         password: user.password,
+        department: user.department,
       });
     }
   }, [form, user]);
@@ -85,6 +90,7 @@ export const Save = () => {
           username: values.username,
           email: values.email,
           password: values.password,
+          department: values.department,
         });
         navigate("/admin/users");
         toast.success("User successfully edited!");
@@ -94,6 +100,7 @@ export const Save = () => {
           username: values.username,
           email: values.email,
           password: values.password,
+          department: values.department,
         });
         navigate("/admin/users");
         toast.success("User successfully added!");
@@ -216,6 +223,46 @@ export const Save = () => {
                         readOnly={user ? true : false}
                         className={user ? "bg-gray-100 cursor-not-allowed" : ""}
                       />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+          <div className="col-span-6">
+            <div className="mb-3">
+              <FormField
+                control={form.control}
+                name="department"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center gap-3 space-y-1">
+                      <FormLabel>Department</FormLabel>
+                      <FormMessage className="text-xs" />
+                    </div>
+                    <FormControl>
+                      <Select
+                        value={String(field.value)}
+                        onValueChange={(e) => field.onChange(e)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {department ? (
+                            department?.map((d) => (
+                              <SelectItem key={d._id} value={String(d._id)}>
+                                {d.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="flex flex-col w-full text-gray-400 bg-gray-100 gap-2 border-[2px] items-center justify-center border-gray-200 p-4 rounded-lg capitalize">
+                              <BookDashed size={20} />
+                              no data
+                            </div>
+                          )}
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                   </FormItem>
                 )}

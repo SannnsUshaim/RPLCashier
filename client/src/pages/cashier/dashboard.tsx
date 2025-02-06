@@ -18,6 +18,10 @@ import InputMoney from "@/components/ui/inputMoney";
 import { useNavigate } from "react-router-dom";
 import useSWR from "swr";
 import { fetcher } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import axios from "axios";
+import dayjs from "dayjs";
+import toast from "react-hot-toast";
 
 // Mock data produk - ganti dengan API call
 const mockProducts = [
@@ -29,7 +33,17 @@ const mockProducts = [
 ];
 
 export const Dashboard = () => {
+  const today = dayjs().format("YYYY-MM-DD");
   const navigate = useNavigate();
+
+  const { data: transaksi_id } = useSWR(
+    "http://localhost:7700/api/transaction/id",
+    fetcher
+  );
+  const { data: currentUser } = useSWR(
+    "http://localhost:7700/api/users/current",
+    fetcher
+  );
 
   const { data: barang } = useSWR("http://localhost:7700/api/product", fetcher);
 
@@ -37,10 +51,13 @@ export const Dashboard = () => {
     resolver: zodResolver(ScanSchemas),
     defaultValues: {
       products: [],
+      _id: transaksi_id,
+      userId: currentUser?._id,
       totalBarang: 0,
       totalHarga: 0,
       bayar: 0,
       kembalian: 0,
+      manualInput: "",
     },
   });
 
@@ -54,6 +71,7 @@ export const Dashboard = () => {
 
   const [scannedCode, setScannedCode] = React.useState("");
   const [scanError, setScanError] = React.useState("");
+  const [manualInput, setManualInput] = React.useState("");
 
   // Watch perubahan nilai
   const totalHarga = useWatch({ control: form.control, name: "totalHarga" });
@@ -149,6 +167,7 @@ export const Dashboard = () => {
   const handleReset = () => {
     form.reset({
       products: [],
+      manualInput: "",
       totalBarang: 0,
       totalHarga: 0,
       bayar: 0,
@@ -167,40 +186,104 @@ export const Dashboard = () => {
   };
 
   const onSubmit = async (values: z.infer<typeof ScanSchemas>) => {
-    const product = values.products.map((p) => p);
-    if (values.bayar < values.totalHarga) {
-      form.setError("bayar", { message: "Jumlah bayar kurang" });
-      return;
-    }
+    try {
+      const product = values.products.map((p) => p);
 
-    if (products.length < 1 || products.length == 0) {
-      form.setError("products", { message: "Minimal 1 Product" });
-    } else {
-      // Navigasi ke halaman print dengan membawa data
-      navigate("/cashier/print", {
-        state: {
-          products: values.products,
+      // Validasi pembayaran
+      if (values.bayar < values.totalHarga) {
+        form.setError("bayar", { message: "Jumlah bayar kurang" });
+        return;
+      }
+
+      // Validasi produk
+      if (products.length === 0) {
+        form.setError("products", { message: "Minimal 1 Product" });
+        return;
+      }
+
+      // Kirim request
+      const response = await axios.post(
+        "http://localhost:7700/api/transaction/",
+        {
+          _id: values._id,
+          userId: values.userId,
           totalBarang: values.totalBarang,
           totalHarga: values.totalHarga,
           bayar: values.bayar,
           kembalian: values.kembalian,
-          waktuTransaksi: new Date().toLocaleString(),
-        },
-      });
-
-      // Reset form setelah print (opsional)
-      handleReset();
+          transactionDate: today,
+          products: product,
+          total: values.totalBarang,
+        }
+      );
+      toast.success("Transaksi berhasil!");
+      // Navigasi setelah request sukses
+      if (response.status === 201) {
+        navigate("/cashier/print", {
+          state: {
+            _id: transaksi_id,
+            userId: currentUser._id,
+            products: values.products,
+            totalBarang: values.totalBarang,
+            totalHarga: values.totalHarga,
+            bayar: values.bayar,
+            kembalian: values.kembalian,
+            waktuTransaksi: new Date().toLocaleString(),
+          },
+        });
+        handleReset();
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast.error("Request error!");
+      // Tambahkan notifikasi error ke user jika perlu
     }
   };
+
+  // Fungsi untuk handle pencarian manual
+  const handleManualSearch = () => {
+    processScannedCode(manualInput);
+    setManualInput(""); // Reset input setelah pencarian
+  };
+
+  React.useEffect(() => {
+    if (manualInput) {
+      handleManualSearch();
+    }
+  }, [manualInput]);
 
   return (
     <Form {...form}>
       <form
         id="products"
         onSubmit={form.handleSubmit(onSubmit)}
-        className="bg-white w-full h-full rounded-lg shadow-lg p-5 overflow-y-auto flex flex-col justify-between"
+        className="bg-white w-full h-full rounded-lg shadow-lg p-5 overflow-y-auto gap-2 flex flex-col justify-between"
       >
-        <div className="flex-1">
+        <div className="flex flex-col flex-1 gap-3">
+          <FormField
+            control={form.control}
+            name="manualInput"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <div className="flex items-center gap-3 space-y-1">
+                  <FormLabel>Manual Input</FormLabel>
+                  <FormMessage className="text-xs" />
+                </div>
+                <FormControl>
+                  <Input
+                    type="text"
+                    {...field}
+                    className="border-2 border-slate-400 rounded-lg p-2 w-full"
+                    value={field.value}
+                    onChange={(e) => {
+                      field.onChange(e);
+                      setManualInput(e.target.value);
+                    }}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
           {fields.length === 0 ? (
             <div className="bg-white border-2 border-slate-400 h-full w-full rounded-lg flex flex-col gap-2 justify-center items-center text-slate-300 text-xl font-medium capitalize">
               <ShoppingCart size={50} />
@@ -270,7 +353,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Total Section */}
-        <div className="mt-8 space-y-4">
+        <div className="mt-2 space-y-4">
           <div className="flex justify-between">
             <Label>Total Barang:</Label>
             <span>{form.watch("totalBarang")}</span>

@@ -6,6 +6,7 @@ import productRouter from "./routes/product.js";
 import userRouter from "./routes/users.js";
 import authRouter from "./routes/auths.js";
 import uploadRputer from "./routes/uploads.js";
+import transactionRouter from "./routes/transaction.js";
 
 dotenv.config();
 
@@ -33,3 +34,4 @@ app.use("/api/upload", uploadRputer);
 app.use("/api/auth", authRouter);
 app.use("/api/product", productRouter);
 app.use("/api/users", userRouter);
+app.use("/api/transaction", transactionRouter);

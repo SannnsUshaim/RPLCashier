@@ -1,6 +1,9 @@
 import { z } from "zod";
 
 export const ScanSchemas = z.object({
+  manualInput: z.string(),
+  _id: z.string(),
+  userId: z.string(),
   totalBarang: z.number(),
   totalHarga: z.number(),
   bayar: z.number(),

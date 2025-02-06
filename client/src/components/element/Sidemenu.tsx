@@ -14,7 +14,7 @@ const Sidemenu = () => {
     );
   }, [auth]);
   return (
-    <div className="basis-2/12 flex flex-col gap-8 bg-primary p-4 h-auto text-white overflow-y-auto shadow-inner">
+    <div className="basis-2/12 flex flex-col gap-8 bg-primary p-5 h-auto text-white overflow-y-auto shadow-inner">
       <div className="flex items-center gap-5">
         <Logo />
       </div>

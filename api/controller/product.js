@@ -30,16 +30,9 @@ export const getProduct = (req, res) => {
 };
 
 export const addProduct = (req, res) => {
-  db.beginTransaction((err) => {
-    if (err) {
-      console.error(err);
-      return res
-        .status(500)
-        .send("An error occurred while starting the transaction.");
-    }
-    const { _id, name, stok, harga, attachment } = req.body;
-    const q = `
-          INSERT 
+  const { _id, name, stok, harga } = req.body;
+  const q = `
+          INSERT
           INTO
           product
           (
@@ -48,66 +41,94 @@ export const addProduct = (req, res) => {
               stok,
               harga
           ) VALUES (?)`;
-    const values = [_id, name, stok, harga];
+  const values = [_id, name, stok, harga];
 
-    db.query(q, [values], (err, data) => {
-      if (err) return res.send(err);
+  db.query(q, [values], (err, data) => {
+    if (err) return res.send(err);
 
-      if (attachment && attachment.lenght > 0) {
-        const attachmentQuery = `
-                  INSERT
-                  INTO
-                  productdetails
-                  (
-                      productId
-                      attachmentP
-                  ) VALUES (?)`;
-
-        const attachmentValues = attachment.map((att) => [
-          _id,
-          att.attachmentP,
-        ]);
-
-        db.query(attachmentQuery, [attachmentValues], (err, result) => {
-          if (err) {
-            db.rollback(() => {
-              console.error(err);
-              res
-                .status(500)
-                .send("An error occurred while committing the transaction.");
-            });
-          }
-
-          db.commit((err) => {
-            if (err) {
-              db.rollback(() => {
-                console.error(err);
-                res
-                  .status(500)
-                  .send("An error occurred while committing the transaction.");
-              });
-            }
-
-            res
-              .status(201)
-              .json("jurnal and its details have been successfully created.");
-          });
-        });
-      } else {
-        db.commit((err) => {
-          if (err) {
-            db.rollback(() => {
-              console.error(err);
-              res
-                .status(500)
-                .send("An error occurred while committing the transaction.");
-            });
-          }
-          res.status(201).json("product has been successfully created.");
-        });
-      }
-    });
+    return res.status(200).json({
+      message: "A product has been successfully created",
+    })
   });
+
+  // db.beginTransaction((err) => {
+  //   if (err) {
+  //     console.error(err);
+  //     return res
+  //       .status(500)
+  //       .send("An error occurred while starting the transaction.");
+  //   }
+  //   const { _id, name, stok, harga, attachment } = req.body;
+  //   const q = `
+  //         INSERT
+  //         INTO
+  //         product
+  //         (
+  //             _id,
+  //             name,
+  //             stok,
+  //             harga
+  //         ) VALUES (?)`;
+  //   const values = [_id, name, stok, harga];
+
+  //   db.query(q, [values], (err, data) => {
+  //     if (err) return res.send(err);
+
+  //     if (attachment && attachment.lenght > 0) {
+  //       const attachmentQuery = `
+  //                 INSERT
+  //                 INTO
+  //                 productdetails
+  //                 (
+  //                     productId
+  //                     attachmentP
+  //                 ) VALUES (?)`;
+
+  //       const attachmentValues = attachment.map((att) => [
+  //         _id,
+  //         att.attachmentP,
+  //       ]);
+
+  //       db.query(attachmentQuery, [attachmentValues], (err, result) => {
+  //         if (err) {
+  //           db.rollback(() => {
+  //             console.error(err);
+  //             res
+  //               .status(500)
+  //               .send("An error occurred while committing the transaction.");
+  //           });
+  //         }
+
+  //         db.commit((err) => {
+  //           if (err) {
+  //             db.rollback(() => {
+  //               console.error(err);
+  //               res
+  //                 .status(500)
+  //                 .send("An error occurred while committing the transaction.");
+  //             });
+  //           }
+
+  //           res
+  //             .status(201)
+  //             .json("jurnal and its details have been successfully created.");
+  //         });
+  //       });
+  //     } else {
+  //       db.commit((err) => {
+  //         if (err) {
+  //           db.rollback(() => {
+  //             console.error(err);
+  //             res
+  //               .status(500)
+  //               .send("An error occurred while committing the transaction.");
+  //           });
+  //         }
+  //         res.status(201).json("product has been successfully created.");
+  //       });
+  //     }
+  //   });
+  // });
 };
 
 export const updateProduct = (req, res) => {

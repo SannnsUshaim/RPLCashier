@@ -30,6 +30,13 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { BarcodeGenerator } from "@/components/element/barcodeGenerator";
 
 export type Header = {
   _id: string;
@@ -40,6 +47,7 @@ export type Header = {
 
 export const Report = () => {
   const navigate = useNavigate();
+
   const {
     data: products,
     error,
@@ -52,6 +60,9 @@ export const Report = () => {
   );
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
+  const [selectedBarcodeId, setSelectedBarcodeId] = React.useState<
+    string | null
+  >(null);
 
   const productColumns: ColumnDef<Header>[] = [
     {
@@ -182,32 +193,49 @@ export const Report = () => {
       },
     },
     {
-      id: "Attachment",
-      accessorKey: "attachmentP",
-      header: ({ column }) => {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        const productId = row.original._id;
+        const isValid = productId.length === 12;
         return (
           <Button
-            className="px-0"
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            variant="default"
+            onClick={() => setSelectedBarcodeId(productId)}
+            disabled={!isValid}
           >
-            Attachment
-            {column.getIsSorted() === "asc" ? (
-              <ArrowUpWideNarrow className="ml-2 h-4 w-4" />
-            ) : (
-              <ArrowDownWideNarrow className="ml-2 h-4 w-4" />
-            )}
+            Generate Barcode
           </Button>
         );
       },
-      cell: ({ row }) => {
-        const harga = row.original.harga.toLocaleString("id-ID", {
-          style: "currency",
-          currency: "IDR",
-        });
-        return <div className="uppercase">{harga}</div>;
-      },
     },
+    // {
+    //   id: "Attachment",
+    //   accessorKey: "attachmentP",
+    //   header: ({ column }) => {
+    //     return (
+    //       <Button
+    //         className="px-0"
+    //         variant="ghost"
+    //         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+    //       >
+    //         Attachment
+    //         {column.getIsSorted() === "asc" ? (
+    //           <ArrowUpWideNarrow className="ml-2 h-4 w-4" />
+    //         ) : (
+    //           <ArrowDownWideNarrow className="ml-2 h-4 w-4" />
+    //         )}
+    //       </Button>
+    //     );
+    //   },
+    //   cell: ({ row }) => {
+    //     const harga = row.original.harga.toLocaleString("id-ID", {
+    //       style: "currency",
+    //       currency: "IDR",
+    //     });
+    //     return <div className="uppercase">{harga}</div>;
+    //   },
+    // },
   ];
 
   const selectedRowIds = Object.keys(rowSelection);
@@ -351,6 +379,19 @@ export const Report = () => {
             </div>
           )}
         </>
+      )}
+      {selectedBarcodeId && (
+        <Dialog
+          open={!!selectedBarcodeId}
+          onOpenChange={() => setSelectedBarcodeId(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Product Barcode</DialogTitle>
+            </DialogHeader>
+            <BarcodeGenerator productId={selectedBarcodeId} />
+          </DialogContent>
+        </Dialog>
       )}
     </>
   );

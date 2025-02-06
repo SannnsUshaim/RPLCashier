@@ -21,7 +21,7 @@ export const Dashboard = () => {
   const { data: users } = useSWR("http://localhost:7700/api/users", fetcher);
 
   const { data: user } = useSWR(
-    "http://localhost:7700/api/auth/token",
+    "http://localhost:7700/api/users/current",
     fetcher
   );
 
@@ -39,7 +39,7 @@ export const Dashboard = () => {
     <div className="bg-white h-full w-full rounded-lg shadow-md p-5 overflow-hidden flex flex-col">
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12">
-          <p>Welcome, {}</p>
+          <p>Welcome, {user?.username}</p>
         </div>
         <div className="col-span-6">
           <Card

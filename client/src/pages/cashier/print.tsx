@@ -1,4 +1,3 @@
-import Logo from "@/components/element/logo";
 import React from "react";
 import { useLocation } from "react-router-dom";
 
@@ -13,6 +12,8 @@ interface TransactionData {
   bayar: number;
   kembalian: number;
   waktuTransaksi: string;
+  userId: string;
+  _id: string;
 }
 
 export const Print = () => {
@@ -29,24 +30,31 @@ export const Print = () => {
   if (!transactionData) return <div>No data to print</div>;
 
   return (
-    <div className="p-8 font-mono">
+    <div className="px-1 py-4 font-mono">
       <div className="flex flex-col gap-1 mb-8">
-        <div className="flex gap-2 mb-2">
-          <img src={"/RPL.png"} alt="RPL logo" className="w-[70px]" />
-          <div className="flex flex-col justify-center text-lg font-semibold text-logo">
-            <p>RPL</p>
-            <p>Cashier</p>
+        <a href="/cashier">
+          <div className="flex gap-2 mb-2">
+            <img
+              src={"/RPL.png"}
+              alt="RPL logo"
+              className="w-[30px] h-[30px]"
+            />
+            <div className="flex flex-col justify-center text-xs font-semibold text-logo">
+              <p>RPL</p>
+              <p>Cashier</p>
+            </div>
           </div>
-        </div>
-        <h1 className="font-semibold text-lg">Struk Belanja</h1>
-        <div>
-          Tanggal: {new Date(transactionData.waktuTransaksi).toLocaleString()}
-        </div>
+          <h1 className="font-semibold text-base">Struk Belanja</h1>
+          <h2>Receipt ID: {transactionData._id}</h2>
+          <div className="text-sm">
+            Tanggal: {new Date(transactionData.waktuTransaksi).toLocaleString()}
+          </div>
+        </a>
       </div>
 
-      <div className="border-b-2 mb-4">
+      <div className="border-b-2 mb-2">
         {transactionData.products.map((product, index) => (
-          <div key={index} className="mb-2 flex flex-col gap-1">
+          <div key={index} className="mb-2 flex flex-col gap-1 text-xs">
             <div className="flex justify-between font-medium">
               <span>{product.nama}</span>
               <span>Rp.{product.harga.toLocaleString()}</span>
@@ -61,7 +69,7 @@ export const Print = () => {
         ))}
       </div>
 
-      <div className="mb-2">
+      <div className="mb-2 text-xs">
         <div className="grid grid-cols-12 gap-1 font-medium">
           <div className="col-span-4">
             <span>Total Barang</span>
@@ -102,8 +110,10 @@ export const Print = () => {
         </div>
       </div>
 
-      <div className=" mt-8">Terima kasih atas kunjungan Anda!</div>
-      <div className="text-sm font-semibold mt-1">#Coding4Fun</div>
+      <div className="text text-xs">
+        <div className="mt-8">Terima kasih atas kunjungan Anda!</div>
+        <div className="font-semibold mt-1">#Coding4Fun</div>
+      </div>
     </div>
   );
 };
