@@ -15,7 +15,7 @@ const Checkbox = React.forwardRef<
 >(({ className, variant = "default", ...props }, ref) => {
   const variants = {
     default:
-      "border-zinc-900 focus-visible:ring-primary data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-zinc-50 dark:border-zinc-800 dark:border-zinc-50 dark:ring-offset-zinc-950 dark:focus-visible:ring-zinc-300 dark:data-[state=checked]:bg-zinc-50 dark:data-[state=checked]:text-zinc-900",
+      "border-zinc-900 focus-visible:ring-primary data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-lighter dark:border-zinc-800 dark:border-zinc-50 dark:ring-offset-zinc-950 dark:focus-visible:ring-zinc-300 dark:data-[state=checked]:bg-zinc-50 dark:data-[state=checked]:text-zinc-900",
     primary:
       "text-primary border-zinc-900 focus-visible:ring-zinc-950 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-zinc-50 dark:border-zinc-800 dark:border-zinc-50 dark:ring-offset-zinc-950 dark:focus-visible:ring-zinc-300 dark:data-[state=checked]:bg-zinc-50 dark:data-[state=checked]:text-zinc-900",
     danger:

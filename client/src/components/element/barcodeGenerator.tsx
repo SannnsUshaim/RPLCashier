@@ -10,7 +10,7 @@ export const BarcodeGenerator = ({ productId }: BarcodeGeneratorProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    if (canvasRef.current && productId.length === 12) {
+    if (canvasRef.current && productId.length > 0) {
       JsBarcode(canvasRef.current, productId, {
         format: "CODE128",
         displayValue: true,
@@ -19,7 +19,7 @@ export const BarcodeGenerator = ({ productId }: BarcodeGeneratorProps) => {
     }
   }, [productId]);
 
-  return productId.length === 12 ? (
+  return productId.length > 0 ? (
     <canvas ref={canvasRef} />
   ) : (
     <div className="text-red-500">Product ID must be exactly 12 digits!</div>

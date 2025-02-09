@@ -3,9 +3,9 @@ import { useLocation } from "react-router-dom";
 
 interface TransactionData {
   products: Array<{
-    nama: string;
+    name: string;
     harga: number;
-    quantity: number;
+    stok: number;
   }>;
   totalBarang: number;
   totalHarga: number;
@@ -31,7 +31,7 @@ export const Print = () => {
 
   return (
     <div className="px-1 py-4 font-mono">
-      <div className="flex flex-col gap-1 mb-8">
+      <div className="flex flex-col gap-1 mb-8 text-xs">
         <a href="/cashier">
           <div className="flex gap-2 mb-2">
             <img
@@ -44,9 +44,9 @@ export const Print = () => {
               <p>Cashier</p>
             </div>
           </div>
-          <h1 className="font-semibold text-base">Struk Belanja</h1>
+          <h1 className="font-semibold">Struk Belanja</h1>
           <h2>Receipt ID: {transactionData._id}</h2>
-          <div className="text-sm">
+          <div >
             Tanggal: {new Date(transactionData.waktuTransaksi).toLocaleString()}
           </div>
         </a>
@@ -56,13 +56,13 @@ export const Print = () => {
         {transactionData.products.map((product, index) => (
           <div key={index} className="mb-2 flex flex-col gap-1 text-xs">
             <div className="flex justify-between font-medium">
-              <span>{product.nama}</span>
+              <span>{product.name}</span>
               <span>Rp.{product.harga.toLocaleString()}</span>
             </div>
             <div className="flex justify-between font-semibold">
-              <span>{product.quantity} x</span>
+              <span>{product.stok} x</span>
               <span>
-                Rp.{(product.harga * product.quantity).toLocaleString()}
+                Rp.{(product.harga * product.stok).toLocaleString()}
               </span>
             </div>
           </div>

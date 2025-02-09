@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import InputMoney from "@/components/ui/inputMoney";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const today = dayjs().format("YYYY-MM-DD");
 
@@ -37,15 +38,19 @@ export const Save = () => {
   const navigate = useNavigate();
   const productId = location.state?.productId;
 
-  const { data: product_id } = useSWR(
-    "http://localhost:7700/api/product/id",
-    fetcher
-  );
-
   const { data: product } = useSWR(
     productId ? "http://localhost:7700/api/product/" + productId : null,
     fetcher
   );
+
+  const { data: product_id } = useSWR(
+    product ? null :
+    "http://localhost:7700/api/product/id",
+    fetcher
+  );
+
+
+  console.log(product);
 
   const [file, setFile] = React.useState<File | undefined>(undefined);
 
@@ -57,19 +62,21 @@ export const Save = () => {
       name: "",
       stok: undefined,
       harga: undefined,
+      manualCode: false,
+      manualCode_value: 0,
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
-    name: "attachment",
-    control: form.control,
-    rules: {
-      required: "Minimal 1",
-    },
-  });
+  // const { fields, append, remove } = useFieldArray({
+  //   name: "attachment",
+  //   control: form.control,
+  //   rules: {
+  //     required: "Minimal 1",
+  //   },
+  // });
 
   React.useEffect(() => {
-    if (product_id) {
+    if (product_id && !product) {
       form.setValue("_id", product_id);
     }
   }, [form, product_id]);
@@ -121,6 +128,7 @@ export const Save = () => {
   //   }
   // };
 
+  
   React.useEffect(() => {
     if (product) {
       form.reset({
@@ -135,6 +143,19 @@ export const Save = () => {
       });
     }
   }, [form, product]);
+
+  const manualCodeValidation = form.watch("manualCode")
+  
+    React.useEffect(() => {
+    if (manualCodeValidation === true) {
+      form.setValue("manualCode_value", 1)
+      form.setValue("_id", "")
+    } else {
+      form.setValue("manualCode_value", 0)
+      form.setValue("_id", product_id)
+    }
+  }, [form, manualCodeValidation])
+
 
   const onSubmit = async (values: z.infer<typeof ProductSchema>) => {
     try {
@@ -184,6 +205,45 @@ export const Save = () => {
         className="bg-white w-full h-full rounded-lg shadow-lg px-4 pt-4 overflow-y-auto flex flex-col justify-between"
       >
         <div className="grid grid-cols-12 h-auto gap-x-5">
+          <div className={`col-span-12 ${product ? "hidden" : ""} `}>
+            <div className="mb-3">
+              <div className="flex items-end gap-2">
+                <FormField
+                control={form.control}
+                name="manualCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      {/* <Select
+                        onValueChange={(e) => field.onChange(e)}
+                        value={field.value.toString()}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={"0"}>No</SelectItem>
+                          <SelectItem value={"1"}>Yes</SelectItem>
+                        </SelectContent>
+                      </Select> */}
+                      <div className="flex items-end gap-2">
+                        <Checkbox
+                          className="h-5 w-5 rounded-md text-lighter"
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                        <p className="text-sm text-gray-500">
+                          Manual Code Product
+                        </p>
+                      </div>
+                      {/* <Input {...field} value={field.value} /> */}
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              </div>
+            </div>
+          </div>
           <div className="col-span-6">
             <div className="mb-3">
               <FormField
@@ -219,11 +279,14 @@ export const Save = () => {
                       <FormMessage className="text-xs" />
                     </div>
                     <FormControl>
-                      <Input
+                      { manualCodeValidation === true ? (
+                        <Input {...field} value={field.value}/>
+                      ) : (<Input
                         value={field.value}
                         readOnly
                         className="bg-gray-100 cursor-not-allowed"
-                      />
+                      />) }
+                      
                     </FormControl>
                   </FormItem>
                 )}

@@ -11,9 +11,9 @@ export const ScanSchemas = z.object({
   products: z.array(
     z.object({
       _id: z.string(),
-      nama: z.string(),
+      name: z.string(),
       harga: z.number(),
-      quantity: z.number(),
+      stok: z.number(),
     })
   ),
 });

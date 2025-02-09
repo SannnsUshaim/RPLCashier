@@ -23,18 +23,14 @@ import axios from "axios";
 import dayjs from "dayjs";
 import toast from "react-hot-toast";
 
-// Mock data produk - ganti dengan API call
-const mockProducts = [
-  { _id: "8809618376543", nama: "Product 1", harga: 10000, stok: 5 },
-  { _id: "8809622345665", nama: "Product 2", harga: 15000, stok: 3 },
-  { _id: "800142384835", nama: "Product 3", harga: 12000, stok: 3 },
-  { _id: "8996001600146", nama: "Product 4", harga: 20000, stok: 3 },
-  { _id: "8993988300403", nama: "Product 5", harga: 25000, stok: 3 },
-];
-
 export const Dashboard = () => {
-  const today = dayjs().format("YYYY-MM-DD");
+  const today = dayjs().format("YYYY-MM-DD HH:mm:ss");
   const navigate = useNavigate();
+
+  const { data: barang } = useSWR(
+    "http://localhost:7700/api/product/",
+    fetcher
+  );
 
   const { data: transaksi_id } = useSWR(
     "http://localhost:7700/api/transaction/id",
@@ -44,8 +40,6 @@ export const Dashboard = () => {
     "http://localhost:7700/api/users/current",
     fetcher
   );
-
-  const { data: barang } = useSWR("http://localhost:7700/api/product", fetcher);
 
   const form = useForm<z.infer<typeof ScanSchemas>>({
     resolver: zodResolver(ScanSchemas),
@@ -69,7 +63,6 @@ export const Dashboard = () => {
     },
   });
 
-  const [scannedCode, setScannedCode] = React.useState("");
   const [scanError, setScanError] = React.useState("");
   const [manualInput, setManualInput] = React.useState("");
 
@@ -97,15 +90,15 @@ export const Dashboard = () => {
 
     window.addEventListener("keypress", handleKeyPress);
     return () => window.removeEventListener("keypress", handleKeyPress);
-  }, []);
+  }, [barang]); // Tambahkan dependency pada barang
 
-  const processScannedCode = async (code: string) => {
+  const processScannedCode = (code: string) => {
     try {
-      setScannedCode(code);
+      console.log("Scanned Code:", code);
       setScanError("");
 
-      // Cari produk di database (mock)
-      const product = mockProducts.find((p) => p._id === code);
+      // Cari produk di database
+      const product = barang?.find((p) => p._id === code);
       if (!product) throw new Error("Produk tidak ditemukan");
 
       // Cek apakah produk sudah ada di keranjang
@@ -114,26 +107,24 @@ export const Dashboard = () => {
       if (existingIndex > -1) {
         // Update quantity jika masih ada stok
         const currentProduct = form.getValues(`products.${existingIndex}`);
-        const currentStock =
-          mockProducts.find((p) => p._id === code)?.stok || 0;
+        const currentStock = barang?.find((p) => p._id === code)?.stok || 0;
 
-        if (currentProduct.quantity + 1 > currentStock) {
+        if (currentProduct.stok + 1 > currentStock) {
           throw new Error("Stok tidak mencukupi");
         }
 
         update(existingIndex, {
           ...currentProduct,
-          quantity: currentProduct.quantity + 1,
+          stok: currentProduct.stok + 1,
         });
       } else {
         // Tambahkan produk baru
         if (product.stok < 1) {
-          // Tambahkan validasi stok
           throw new Error("Stok tidak mencukupi");
         }
         append({
           ...product,
-          quantity: 1,
+          stok: 1,
         });
       }
 
@@ -146,11 +137,8 @@ export const Dashboard = () => {
 
   const updateTotals = () => {
     const products = form.watch("products");
-    const totalBarang = products.reduce((sum, p) => sum + p.quantity, 0);
-    const totalHarga = products.reduce(
-      (sum, p) => sum + p.harga * p.quantity,
-      0
-    );
+    const totalBarang = products.reduce((sum, p) => sum + p.stok, 0);
+    const totalHarga = products.reduce((sum, p) => sum + p.harga * p.stok, 0);
 
     form.setValue("totalBarang", totalBarang);
     form.setValue("totalHarga", totalHarga);
@@ -163,6 +151,16 @@ export const Dashboard = () => {
       form.setValue("kembalian", kembali);
     }
   }, [form, totalHarga, bayar]);
+
+  React.useEffect(() => {
+    if (transaksi_id && currentUser) {
+      form.reset({
+        ...form.getValues(),
+        _id: transaksi_id,
+        userId: currentUser._id,
+      });
+    }
+  }, [transaksi_id, currentUser]); // Tambahkan effect ini
 
   const handleReset = () => {
     form.reset({
@@ -177,15 +175,20 @@ export const Dashboard = () => {
 
   const handleQuantityChange = (index: number, change: number) => {
     const currentProduct = fields[index];
-    if (currentProduct.quantity + change < 1) return;
+    if (currentProduct.stok + change < 1) return;
     update(index, {
       ...currentProduct,
-      quantity: currentProduct.quantity + change,
+      stok: currentProduct.stok + change,
     });
     updateTotals();
   };
 
   const onSubmit = async (values: z.infer<typeof ScanSchemas>) => {
+    console.log("Submitting form with values:", values);
+    if (!values._id || !values.userId) {
+      toast.error("ID Transaksi atau User tidak valid");
+      return;
+    }
     try {
       const product = values.products.map((p) => p);
 
@@ -216,19 +219,18 @@ export const Dashboard = () => {
           total: values.totalBarang,
         }
       );
-      toast.success("Transaksi berhasil!");
       // Navigasi setelah request sukses
-      if (response.status === 201) {
+      if (response.status === 201 && response.status < 300) {
         navigate("/cashier/print", {
           state: {
-            _id: transaksi_id,
-            userId: currentUser._id,
+            _id: values._id,
+            userId: values.userId,
             products: values.products,
             totalBarang: values.totalBarang,
             totalHarga: values.totalHarga,
             bayar: values.bayar,
             kembalian: values.kembalian,
-            waktuTransaksi: new Date().toLocaleString(),
+            waktuTransaksi: today,
           },
         });
         handleReset();
@@ -236,11 +238,9 @@ export const Dashboard = () => {
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("Request error!");
-      // Tambahkan notifikasi error ke user jika perlu
     }
   };
 
-  // Fungsi untuk handle pencarian manual
   const handleManualSearch = () => {
     processScannedCode(manualInput);
     setManualInput(""); // Reset input setelah pencarian
@@ -312,7 +312,7 @@ export const Dashboard = () => {
                   </div>
 
                   <div className="flex-1">
-                    <h3 className="font-bold">{field.nama}</h3>
+                    <h3 className="font-bold uppercase">{field.name}</h3>
                     <div className="flex justify-between">
                       <div className="flex gap-4">
                         <div className="flex flex-col gap-1">
@@ -321,12 +321,12 @@ export const Dashboard = () => {
                         </div>
                         <div className="flex flex-col gap-1">
                           <Label>Qty</Label>
-                          <p>{field.quantity}</p>
+                          <p>{field.stok}</p>
                         </div>
                         <div className="flex flex-col gap-1">
                           <Label>Total</Label>
                           <p>
-                            Rp {(field.harga * field.quantity).toLocaleString()}
+                            Rp {(field.harga * field.stok).toLocaleString()}
                           </p>
                         </div>
                       </div>
@@ -402,9 +402,16 @@ export const Dashboard = () => {
             <Button
               type="submit"
               className="capitalize text-lighter bg-primary"
+              disabled={form.formState.isSubmitting}
             >
-              <Printer size={15} />
-              <p>Print</p>
+              {form.formState.isSubmitting ? (
+                "Memproses..."
+              ) : (
+                <>
+                  <Printer size={15} />
+                  <p>Print</p>
+                </>
+              )}
             </Button>
           </div>
         </div>

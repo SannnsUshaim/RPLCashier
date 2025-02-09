@@ -29,11 +29,10 @@ export const getIdTransaction = (_req, res) => {
 export const addTransaction = (req, res) => {
   db.beginTransaction((err) => {
     if (err) {
-      console.error(err);
-      return res
-        .status(500)
-        .send("An error occurred while starting the transaction.");
+      console.error("Error starting transaction:", err);
+      return res.status(500).send("Gagal memulai transaksi database.");
     }
+
     const {
       _id,
       userId,
@@ -43,21 +42,20 @@ export const addTransaction = (req, res) => {
       kembalian,
       transactionDate,
       products,
-      total,
     } = req.body;
+
+    // 1. Perbaikan typo kolom 'kembalian'
     const q = `
-          INSERT 
-          INTO
-          transaksi
-          (
-              _id,
-              userId,
-              totalBarang,
-              totalHarga,
-              bayar,
-              kemabalian,
-              transactionDate
-          ) VALUES (?)`;
+      INSERT INTO transaksi (
+        _id,
+        userId,
+        totalBarang,
+        totalHarga,
+        bayar,
+        kembalian,  
+        transactionDate
+      ) VALUES (?)`;
+
     const values = [
       _id,
       userId,
@@ -69,62 +67,52 @@ export const addTransaction = (req, res) => {
     ];
 
     db.query(q, [values], (err, data) => {
-      if (err) return res.send(err);
+      if (err) {
+        console.error("Error inserting transaction:", err);
+        return db.rollback(() => res.status(500).send(err.message));
+      }
 
-      if (products && products.lenght > 0) {
+      // 2. Perbaikan typo 'lenght' menjadi 'length'
+      if (products && products.length > 0) {
         const detailQuery = `
-        INSERT INTO
-        transaksidetails
-        (
-          transactionId,
-          productId,
-          harga,
-          jumlah,
-          total
-        ) VALUES (?)`;
+          INSERT INTO transaksidetails (
+            transactionId,
+            productId,
+            harga,
+            jumlah,
+            total
+          ) VALUES ?`; // Gunakan placeholder ? untuk bulk insert
 
         const detailValues = products.map((p) => [
           _id,
           p._id,
           p.harga,
-          p.quantity,
-          p.harga * p.quantity, // Total dihitung dari harga * quantity
+          p.stok,
+          p.harga * p.stok,
         ]);
 
+        // 3. Perbaikan parameter bulk insert (hilangkan array wrapper)
         db.query(detailQuery, [detailValues], (err, result) => {
           if (err) {
-            db.rollback(() => {
-              console.error(err);
-              res
-                .status(500)
-                .send("An error occurred while committing the transaction.");
-            });
+            console.error("Error inserting details:", err);
+            return db.rollback(() => res.status(500).send(err.message));
           }
 
           db.commit((err) => {
             if (err) {
-              db.rollback(() => {
-                console.error(err);
-                res
-                  .status(500)
-                  .send("An error occurred while committing the transaction.");
-              });
+              console.error("Error committing transaction:", err);
+              return db.rollback(() => res.status(500).send(err.message));
             }
-
-            res.status(201).json("Transaction have been successfully created.");
+            res.status(201).json("Transaksi berhasil dibuat.");
           });
         });
       } else {
         db.commit((err) => {
           if (err) {
-            db.rollback(() => {
-              console.error(err);
-              res
-                .status(500)
-                .send("An error occurred while committing the transaction.");
-            });
+            console.error("Error committing transaction:", err);
+            return db.rollback(() => res.status(500).send(err.message));
           }
-          res.status(201).json("Transaction has been successfully created.");
+          res.status(201).json("Transaksi berhasil dibuat tanpa detail.");
         });
       }
     });

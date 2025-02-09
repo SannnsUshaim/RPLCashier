@@ -25,6 +25,7 @@ import useSWR from "swr";
 import {
   ArrowDownWideNarrow,
   ArrowUpWideNarrow,
+  Download,
   PlusCircle,
   SquarePen,
   TriangleAlert,
@@ -36,6 +37,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import jsPDF from "jspdf";
 import { BarcodeGenerator } from "@/components/element/barcodeGenerator";
 
 export type Header = {
@@ -51,7 +53,7 @@ export const Report = () => {
   const {
     data: products,
     error,
-    mutate,
+    // mutate,
   } = useSWR("http://localhost:7700/api/product/", fetcher);
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -197,14 +199,50 @@ export const Report = () => {
       header: "Actions",
       cell: ({ row }) => {
         const productId = row.original._id;
-        const isValid = productId.length === 12;
+        const isValid = productId.length > 0;
+
+        const handleDownloadBarcode = () => {
+          if (!isValid) return;
+
+          // Buat canvas sementara
+          const canvas = document.createElement("canvas");
+
+          // Generate barcode ke canvas
+          JsBarcode(canvas, productId, {
+            format: "CODE128",
+            displayValue: false,
+            width: 2,
+            height: 40,
+          });
+
+          // Konversi canvas ke PDF
+          const pdf = new jsPDF({
+            orientation: "landscape",
+            unit: "mm",
+            format: [80, 50], // Ukuran kartu kecil
+          });
+
+          // Tambahkan barcode
+          const imgData = canvas.toDataURL("image/png");
+          pdf.addImage(imgData, "PNG", 5, 5, 70, 20);
+
+          // Tambahkan teks product ID
+          pdf.setFontSize(10);
+          pdf.text(productId, 40, 30, { align: "center" });
+
+          // Download PDF
+          pdf.save(`${productId}_barcode.pdf`);
+        };
+
         return (
           <Button
             variant="default"
-            onClick={() => setSelectedBarcodeId(productId)}
+            onClick={handleDownloadBarcode}
             disabled={!isValid}
+            className="gap-2"
           >
-            Generate Barcode
+            <Download size={15} />
+            Download Barcode
           </Button>
         );
       },

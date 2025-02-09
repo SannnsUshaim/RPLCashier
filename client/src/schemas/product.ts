@@ -13,6 +13,8 @@ export const ProductSchema = z.object({
   name: z.string().min(1, { message: "Product Name is Required!" }),
   stok: z.number().min(1, { message: "Stok is Required" }),
   harga: z.number().min(1, { message: "Product Price is Required!" }),
+  manualCode: z.boolean().optional(),
+  manualCode_value: z.number().optional()
   // attachment: z.array(
   //   z.object({
   //     attachmentP: z
